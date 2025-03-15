@@ -29,6 +29,7 @@ class QuranApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: AppColors.accentColor,
+
         fontFamily: 'Tajawal',
         scaffoldBackgroundColor: AppColors.bgColor,
       ),
