@@ -1,11 +1,19 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:quran_moben/app/views/widgets/custom_textfield.dart';
 import 'package:quran_moben/app/views/widgets/glass_container.dart';
 import 'package:quran_moben/utils/colors.dart';
 import 'package:quran_moben/utils/extensions.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../controllers/quran_page_controller.dart';
@@ -51,6 +59,7 @@ class _SettingsViewState extends State<SettingsView>
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         title: const Text('الإعدادات',
             style: TextStyle(color: AppColors.accentColor)),
         backgroundColor: AppColors.bgColor,
@@ -192,13 +201,28 @@ class _SettingsViewState extends State<SettingsView>
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'إحصائيات النشاط',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'إحصائيات النشاط',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              TextButton(
+                  onPressed: () => _shareUserActivity(context),
+                  child: const Text(
+                    'مشاركة',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.accentColor,
+                    ),
+                  ))
+            ],
           ),
           const SizedBox(height: 15),
           Row(
@@ -635,6 +659,253 @@ class _SettingsViewState extends State<SettingsView>
       color: AppColors.textSecondary.withOpacity(0.1),
       strokeWidth: 1,
       dashArray: [5, 5],
+    );
+  }
+
+  Future<void> _shareUserActivity(BuildContext context) async {
+    // Create a key for the widget we want to capture
+    final GlobalKey repaintKey = GlobalKey();
+
+    // Get the current tab index to know which data to share
+    final int currentTabIndex = _tabController.index;
+    final String activityType = _chartTypes[currentTabIndex];
+
+    // Create a widget that displays the user's activity data
+    final Widget activityWidget = Material(
+      color: Colors.transparent,
+      child: RepaintBoundary(
+        key: repaintKey,
+        child: Container(
+          width: 350,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.bgColor,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/horLogo.png',
+                height: 24,
+              ),
+              const SizedBox(height: 20),
+              Container(
+                height: 40,
+                alignment: Alignment.center,
+                child: const Text(
+                  'إحصائيات القراءة',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.accentColor,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              Text(
+                'نشاط $activityType',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 200,
+                child: _buildChartForSharing(currentTabIndex),
+              ),
+              const SizedBox(height: 20),
+              _buildStatsSummary(),
+              const SizedBox(height: 15),
+              Text(
+                'اسم المستخدم: ${controller.savedName.value}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'تاريخ المشاركة: ${DateFormat('yyyy/MM/dd').format(DateTime.now())}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Use a completer to handle the dialog closing
+    final completer = Completer<void>();
+
+    // Show the dialog first
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              activityWidget,
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      completer.complete();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('مشاركة'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      completer.completeError('Cancelled');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('إلغاء'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      // Wait for the dialog to be closed
+      await completer.future;
+
+      // We need to add this widget to the tree temporarily to capture it
+      final OverlayEntry entry = OverlayEntry(
+        builder: (context) => Positioned(
+          left: 0,
+          top: 0,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: activityWidget,
+          ),
+        ),
+      );
+
+      Overlay.of(context).insert(entry);
+
+      // Wait for the widget to be rendered
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Now capture the image
+      RenderRepaintBoundary boundary = repaintKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+
+      // Remove the widget from the tree
+      entry.remove();
+
+      if (byteData != null) {
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+            '${tempDir.path}/user_activity_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(byteData.buffer.asUint8List());
+
+        // Share the image
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'إحصائيات القراءة الخاصة بي في تطبيق قرآن مبين',
+        );
+      }
+    } catch (e) {
+      if (e != 'Cancelled') {
+        print('Error sharing activity: $e');
+        Get.snackbar(
+          'خطأ',
+          'حدث خطأ أثناء مشاركة الإحصائيات',
+          backgroundColor: Colors.white,
+          colorText: AppColors.accentColor,
+        );
+      }
+    }
+  }
+
+// Helper method to build the chart for sharing
+  Widget _buildChartForSharing(int tabIndex) {
+    switch (tabIndex) {
+      case 0:
+        return _buildDailyActivityChart();
+      case 1:
+        return _buildWeeklyActivityChart();
+      case 2:
+        return _buildHourlyActivityChart();
+      default:
+        return _buildDailyActivityChart();
+    }
+  }
+
+// Helper method to build a summary of stats
+  Widget _buildStatsSummary() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.accentColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _buildStatRow('عدد مرات فتح التطبيق', 'NA'),
+          const SizedBox(height: 8),
+          _buildStatRow('عدد الصفحات المقروءة', 'NA'),
+          const SizedBox(height: 8),
+          _buildStatRow('عدد الأيام المتتالية', 'NA'),
+        ],
+      ),
+    );
+  }
+
+// Helper method to build a stat row
+  Widget _buildStatRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.accentColor,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.accentColor,
+          ),
+        ),
+      ],
     );
   }
 }
