@@ -46,6 +46,7 @@ dependencies:
   sqflite: ^2.3.3
   intl: ^0.20.2
   fl_chart: ^0.69.0
+  keep_screen_on: ^4.0.0
 
 
 dev_dependencies:

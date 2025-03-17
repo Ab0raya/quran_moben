@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:keep_screen_on/keep_screen_on.dart';
 import 'package:quran_moben/app/views/home_view/home_view.dart';
 import 'app/controllers/quran_page_controller.dart';
 import 'data/db/db_helper.dart';
@@ -13,7 +14,9 @@ void main() async {
     SystemUiOverlay.top,
   ]);
 
-  await trackAppOpen(); // Track when app starts
+  await trackAppOpen();
+
+  KeepScreenOn.turnOn();
 
   runApp(const QuranApp());
 }

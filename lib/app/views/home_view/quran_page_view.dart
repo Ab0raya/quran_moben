@@ -578,21 +578,7 @@ class QuranPageView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${controller.getQuarter(
-                            verse.surahNumber,
-                            verse.verseNumber,
-                          )}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: controller.textColor.value,
-                          ),
-                        ),
-                      ],
-                    ),
+
                   ],
                 ),
               ),
