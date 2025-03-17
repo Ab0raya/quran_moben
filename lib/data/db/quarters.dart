@@ -61,6 +61,7 @@ List quarters = [
   {"surah": 6, "ayah": 151, 'pageNumber': 150, 'count': 3},
   {"surah": 7, "ayah": 1, 'pageNumber': 151, 'count': 4},
   {"surah": 7, "ayah": 31, 'pageNumber': 154, 'count': 1},
+  //---------------------------------------------
   {"surah": 7, "ayah": 47, 'pageNumber': 157, 'count': 2},
   {"surah": 7, "ayah": 65, 'pageNumber': 160, 'count': 3},
   {"surah": 7, "ayah": 88, 'pageNumber': 163, 'count': 4},
