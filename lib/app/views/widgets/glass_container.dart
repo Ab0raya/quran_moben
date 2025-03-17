@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class GlassContainer extends StatelessWidget {
   const GlassContainer({
     super.key,
-    required this.height,
+     this.height,
     required this.width,
     required this.child,
     this.horizontalPadding,
@@ -18,7 +18,7 @@ class GlassContainer extends StatelessWidget {
     this.color, this.border,
   });
 
-  final double height;
+  final double? height;
   final double width;
   final Widget child;
   final double? horizontalPadding;

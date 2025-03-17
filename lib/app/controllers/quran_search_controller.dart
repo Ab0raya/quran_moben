@@ -1,12 +1,311 @@
+
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class QuranSearchController extends GetxController {
   RxList<Map<String, dynamic>> filteredQuranText = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> bookmarkedVerses = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> searchHistory = <Map<String, dynamic>>[].obs;
+
+  // New properties for UI enhancements
+  RxBool isLoading = false.obs;
+  RxString searchQuery = ''.obs;
+  RxBool showFilters = false.obs;
+  RxBool filterByJuz = false.obs;
+  RxBool filterBySurah = false.obs;
+  RxBool filterByHizb = false.obs;
+
+  // Surah names mapping
+  final Map<int, String> surahNames = {
+    1: "الفاتحة",
+    2: "البقرة",
+    // Add all 114 surah names here
+    113: "الفلق",
+    114: "الناس",
+  };
+
+  // Juz mapping (surah and verse ranges for each juz)
+  final List<Map<String, dynamic>> juzData = [
+    {"juz": 1, "start_surah": 1, "start_verse": 1, "end_surah": 2, "end_verse": 141},
+    {"juz": 2, "start_surah": 2, "start_verse": 142, "end_surah": 2, "end_verse": 252},
+    // Add all 30 juz here
+  ];
+
+  // Hizb mapping
+  final List<Map<String, dynamic>> hizbData = [
+    {"hizb": 1, "start_surah": 1, "start_verse": 1, "end_surah": 2, "end_verse": 74},
+    // Add all hizb data here
+  ];
 
   @override
   void onInit() {
     super.onInit();
-    filteredQuranText.value = quranTextNormal;
+    loadBookmarks();
+    loadSearchHistory();
+    _enhanceQuranData();
+    filteredQuranText.value = [];
+  }
+
+  // Add surah names to the quran text data
+  void _enhanceQuranData() {
+    for (var verse in quranTextNormal) {
+      int surahNum = verse['surah_number'];
+      verse['surah_name'] = surahNames[surahNum] ?? 'سورة $surahNum';
+    }
+  }
+
+  // Search functionality with loading state
+  void searchQuran(String query) {
+    searchQuery.value = query;
+
+    // Toggle filter visibility
+    showFilters.value = query.isNotEmpty;
+
+    // Show loading for better UX
+    isLoading.value = true;
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (query.isEmpty) {
+        filteredQuranText.value = [];
+      } else {
+        // Normalize Arabic text for better search (remove diacritics)
+        String normalizedQuery = _normalizeArabicText(query);
+
+        // Apply filters
+        List<Map<String, dynamic>> results = quranTextNormal.where((verse) {
+          final content = _normalizeArabicText(verse['content'] as String);
+          bool matches = content.contains(normalizedQuery);
+
+          // Apply additional filters if enabled
+          if (matches && (filterByJuz.value || filterBySurah.value || filterByHizb.value)) {
+            if (filterByJuz.value) {
+              matches = _verseIsInSelectedJuz(verse);
+            }
+            if (matches && filterBySurah.value) {
+              matches = _verseIsInSelectedSurah(verse);
+            }
+            if (matches && filterByHizb.value) {
+              matches = _verseIsInSelectedHizb(verse);
+            }
+          }
+
+          return matches;
+        }).toList();
+
+        filteredQuranText.value = results;
+      }
+      isLoading.value = false;
+    });
+  }
+
+  // Helper method to normalize Arabic text by removing diacritics
+  String _normalizeArabicText(String text) {
+    // Remove tashkeel (diacritics)
+    return text
+        .replaceAll('\u064B', '') // fathatan
+        .replaceAll('\u064C', '') // dammatan
+        .replaceAll('\u064D', '') // kasratan
+        .replaceAll('\u064E', '') // fatha
+        .replaceAll('\u064F', '') // damma
+        .replaceAll('\u0650', '') // kasra
+        .replaceAll('\u0651', '') // shadda
+        .replaceAll('\u0652', '') // sukun
+        .replaceAll('\u0653', '') // maddah
+        .replaceAll('\u0654', '') // hamza above
+        .replaceAll('\u0655', '') // hamza below
+        .toLowerCase();
+  }
+
+  // Clear search query
+  void clearSearch() {
+    searchQuery.value = '';
+    filteredQuranText.value = [];
+    showFilters.value = false;
+    filterByJuz.value = false;
+    filterBySurah.value = false;
+    filterByHizb.value = false;
+  }
+
+  // Filter toggle methods
+  void toggleJuzFilter() {
+    filterByJuz.value = !filterByJuz.value;
+    searchQuran(searchQuery.value);
+  }
+
+  void toggleSurahFilter() {
+    filterBySurah.value = !filterBySurah.value;
+    searchQuran(searchQuery.value);
+  }
+
+  void toggleHizbFilter() {
+    filterByHizb.value = !filterByHizb.value;
+    searchQuran(searchQuery.value);
+  }
+
+  // Filter implementation methods
+  bool _verseIsInSelectedJuz(Map<String, dynamic> verse) {
+    // In a real implementation, you'd have logic to check if verse is in the current juz
+    // This is a placeholder implementation
+    int currentJuz = 1; // This would come from user selection
+    for (var juz in juzData) {
+      if (juz['juz'] == currentJuz) {
+        int surahNum = verse['surah_number'];
+        int verseNum = verse['verse_number'];
+
+        // Start condition
+        bool afterStart = surahNum > juz['start_surah'] ||
+            (surahNum == juz['start_surah'] && verseNum >= juz['start_verse']);
+
+        // End condition
+        bool beforeEnd = surahNum < juz['end_surah'] ||
+            (surahNum == juz['end_surah'] && verseNum <= juz['end_verse']);
+
+        return afterStart && beforeEnd;
+      }
+    }
+    return false;
+  }
+
+  bool _verseIsInSelectedSurah(Map<String, dynamic> verse) {
+    // In a real implementation, this would check against user-selected surah
+    int selectedSurah = 1; // This would come from user selection
+    return verse['surah_number'] == selectedSurah;
+  }
+
+  bool _verseIsInSelectedHizb(Map<String, dynamic> verse) {
+    // Similar to juz check but with hizb data
+    int currentHizb = 1; // This would come from user selection
+    for (var hizb in hizbData) {
+      if (hizb['hizb'] == currentHizb) {
+        int surahNum = verse['surah_number'];
+        int verseNum = verse['verse_number'];
+
+        bool afterStart = surahNum > hizb['start_surah'] ||
+            (surahNum == hizb['start_surah'] && verseNum >= hizb['start_verse']);
+
+        bool beforeEnd = surahNum < hizb['end_surah'] ||
+            (surahNum == hizb['end_surah'] && verseNum <= hizb['end_verse']);
+
+        return afterStart && beforeEnd;
+      }
+    }
+    return false;
+  }
+
+  // Bookmark functionality
+  void bookmarkVerse(Map<String, dynamic> verse) {
+    // Check if verse is already bookmarked
+    bool isAlreadyBookmarked = bookmarkedVerses.any((v) =>
+    v['surah_number'] == verse['surah_number'] &&
+        v['verse_number'] == verse['verse_number']
+    );
+
+    if (isAlreadyBookmarked) {
+      bookmarkedVerses.removeWhere((v) =>
+      v['surah_number'] == verse['surah_number'] &&
+          v['verse_number'] == verse['verse_number']
+      );
+      Get.snackbar(
+        'تم إزالة الإشارة المرجعية',
+        'تم إزالة الآية من المفضلة',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.2),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      );
+    } else {
+      bookmarkedVerses.add(verse);
+      Get.snackbar(
+        'تمت إضافة الإشارة المرجعية',
+        'تمت إضافة الآية إلى المفضلة',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.2),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      );
+    }
+
+    saveBookmarks();
+  }
+
+  // Check if a verse is bookmarked
+  bool isVerseBookmarked(Map<String, dynamic> verse) {
+    return bookmarkedVerses.any((v) =>
+    v['surah_number'] == verse['surah_number'] &&
+        v['verse_number'] == verse['verse_number']
+    );
+  }
+
+  // Search history functionality
+  void addToSearchHistory(Map<String, dynamic> verse) {
+    // Don't add duplicates
+    bool alreadyExists = searchHistory.any((v) =>
+    v['surah_number'] == verse['surah_number'] &&
+        v['verse_number'] == verse['verse_number']
+    );
+
+    if (!alreadyExists) {
+      // Limit history to last 20 items
+      if (searchHistory.length >= 20) {
+        searchHistory.removeLast();
+      }
+
+      // Add to beginning of list
+      searchHistory.insert(0, verse);
+      saveSearchHistory();
+    }
+  }
+
+  // Persistence methods
+  Future<void> saveBookmarks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String bookmarksJson = jsonEncode(bookmarkedVerses.toList());
+      await prefs.setString('quran_bookmarks', bookmarksJson);
+    } catch (e) {
+      debugPrint('Error saving bookmarks: $e');
+    }
+  }
+
+  Future<void> loadBookmarks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? bookmarksJson = prefs.getString('quran_bookmarks');
+      if (bookmarksJson != null) {
+        final List decoded = jsonDecode(bookmarksJson);
+        bookmarkedVerses.value = decoded.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('Error loading bookmarks: $e');
+    }
+  }
+
+  Future<void> saveSearchHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String historyJson = jsonEncode(searchHistory.toList());
+      await prefs.setString('quran_search_history', historyJson);
+    } catch (e) {
+      debugPrint('Error saving search history: $e');
+    }
+  }
+
+  Future<void> loadSearchHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? historyJson = prefs.getString('quran_search_history');
+      if (historyJson != null) {
+        final List decoded = jsonDecode(historyJson);
+        searchHistory.value = decoded.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('Error loading search history: $e');
+    }
   }
 
   final List<Map<String, dynamic>> quranTextNormal = [
@@ -31192,14 +31491,5 @@ class QuranSearchController extends GetxController {
     }
   ];
 
-  void searchQuran(String query) {
-    if (query.isEmpty) {
-      filteredQuranText.value = quranTextNormal;
-    } else {
-      filteredQuranText.value = quranTextNormal.where((verse) {
-        final content = verse['content'] as String;
-        return content.contains(query);
-      }).toList();
-    }
-  }
+
 }
