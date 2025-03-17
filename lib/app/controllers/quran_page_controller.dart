@@ -460,8 +460,8 @@ class QuranPageController extends GetxController {
   }
 
   void setLightTheme() {
-    backgroundColor.value = Colors.white;
-    textColor.value = Colors.black;
+    backgroundColor.value = const Color(0xfffdfdfd);
+    textColor.value = const Color(0xff0d0d0d);
     saveTheme('light');
   }
 
