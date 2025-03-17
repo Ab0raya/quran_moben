@@ -6,7 +6,7 @@ class GlassContainer extends StatelessWidget {
   const GlassContainer({
     super.key,
      this.height,
-    required this.width,
+    this.width,
     required this.child,
     this.horizontalPadding,
     this.verticalPadding,
@@ -19,7 +19,7 @@ class GlassContainer extends StatelessWidget {
   });
 
   final double? height;
-  final double width;
+  final double? width;
   final Widget child;
   final double? horizontalPadding;
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ import 'package:quran_moben/utils/extensions.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../controllers/quran_page_controller.dart';
@@ -79,8 +81,16 @@ class _SettingsViewState extends State<SettingsView>
               _buildThemeSection(),
               const SizedBox(height: 30),
               _buildActivityStatsSection(),
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
               _buildActivityChartsSection(),
+              const SizedBox(height: 40),
+              _buildContactSection(),
+              const SizedBox(height: 40),
+              const Text(
+                'معلش لو فيه بعض المميزات مش ضغاله او بايظه \nعشان عندنا إمتحانات ..\n لاتنسون من صالح دعائكم',
+                style: TextStyle(fontSize: 12, color: AppColors.accentColor),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -352,6 +362,115 @@ class _SettingsViewState extends State<SettingsView>
         ),
       ],
     );
+  }
+
+  Widget _buildContactSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 16.0),
+          child: Text(
+            'تواصل معنا',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.accentColor,
+            ),
+          ),
+        ),
+        GlassContainer(
+          width: null,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'يمكنك التواصل معنا من خلال:',
+                  style: TextStyle(fontSize: 16, color: AppColors.accentColor),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSocialIcon(
+                      icon: Icons.email_outlined,
+                      label: 'البريد\nالإلكتروني',
+                      onTap: () => _launchURL(
+                          'https://mail.google.com/mail/?view=cm&fs=1&to=mhmdsyaed.152005@gmail.com&su=%D8%A3%D8%A8%D9%84%D9%83%D9%8A%D8%B4%D9%8A%D9%86%20%D9%82%D8%B1%D8%A2%D9%86%20%D9%85%D8%A8%D9%8A%D9%86'),
+                    ),
+                    _buildSocialIcon(
+                      icon: Icons.call,
+                      label: 'واتساب',
+                      onTap: () => _launchURL('https://wa.link/i8ls7t'),
+                    ),
+                    _buildSocialIcon(
+                      icon: Icons.discord,
+                      label: 'ديسكورد',
+                      onTap: () => _launchURL('https://discord.gg/b4nc2FwJ'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialIcon({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: AppColors.accentColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.accentColor,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            textAlign: TextAlign.center,
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.accentColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _launchURL(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      print('Could not launch $url: $e');
+      Get.snackbar(
+        'خطأ',
+        'لا يمكن فتح الرابط',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   Widget _buildThemeOption({
