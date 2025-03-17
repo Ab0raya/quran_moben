@@ -86,8 +86,7 @@ class QuranPageController extends GetxController {
   void generatePageJuzMap() {
     for (int pageIndex = 0; pageIndex < pageData.length; pageIndex++) {
       final page = pageData[pageIndex];
-      final firstDetail =
-          page.first;
+      final firstDetail = page.first;
       final surah = firstDetail['surah'];
       final ayah = firstDetail['start'];
       pageJuzMap[pageIndex + 1] = getJuzNumber(surah, ayah);
@@ -98,6 +97,21 @@ class QuranPageController extends GetxController {
 
   int getQuarterForPage(int pageNumber) {
     return pageQuarterMap[pageNumber] ?? 0;
+  }
+
+  int getCountByPageNumber(int pageNumber) {
+    if (pageNumber < quarters[0]['pageNumber']) {
+      return -1;
+    }
+
+    for (int i = 0; i < quarters.length - 1; i++) {
+      if (pageNumber >= quarters[i]['pageNumber'] &&
+          pageNumber < quarters[i + 1]['pageNumber']) {
+        return quarters[i]['count'] as int;
+      }
+    }
+
+    return quarters.last['count'] as int;
   }
 
   int getHizbForPage(int pageNumber) {
@@ -407,7 +421,12 @@ class QuranPageController extends GetxController {
   }
 
   int getJuzForPage(int pageNumber) {
-    return pageJuzMap[pageNumber] ?? 1;
+    for (var surah in surahs) {
+      if (surah.startPage <= pageNumber && surah.endPage >= pageNumber) {
+        return surah.juz;
+      }
+    }
+    return 0;
   }
 
   void generatePageHizbAndQuarterMap() {
@@ -432,10 +451,8 @@ class QuranPageController extends GetxController {
         quarterIndex = quarters.length - 1;
       }
 
-      int hizbNumber =
-          (quarterIndex ~/ 4) + 1;
-      int quarterInHizb =
-          (quarterIndex % 4) + 1;
+      int hizbNumber = (quarterIndex ~/ 4) + 1;
+      int quarterInHizb = (quarterIndex % 4) + 1;
 
       pageHizbMap[pageIndex + 1] = hizbNumber;
       pageQuarterMap[pageIndex + 1] = quarterInHizb;

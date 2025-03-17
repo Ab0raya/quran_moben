@@ -38,9 +38,13 @@ class _SettingsViewState extends State<SettingsView> {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
-        title: const Text('الإعدادات'),
+        title: const Text('الإعدادات',
+            style: TextStyle(color: AppColors.accentColor)),
         backgroundColor: AppColors.bgColor,
         elevation: 0,
+        iconTheme: const IconThemeData(
+          color: AppColors.accentColor,
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -80,7 +84,8 @@ class _SettingsViewState extends State<SettingsView> {
               padding: const EdgeInsets.only(top: 10),
               child: Text(
                 'الاسم المحفوظ: ${controller.savedName.value}',
-                style: const TextStyle(fontSize: 16),
+                style:
+                    const TextStyle(fontSize: 16, color: AppColors.accentColor),
               ),
             ),
         ],

@@ -40,14 +40,15 @@ class HomeView extends StatelessWidget {
         backgroundColor: AppColors.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.search),
+          icon: const Icon(Icons.search,color: AppColors.accentColor,),
           onPressed: () {
             Get.to(QuranSearchView());
           },
         ),
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings,color: AppColors.secAccentColor),
             onPressed: () {
               Get.to(const SettingsView());
             },

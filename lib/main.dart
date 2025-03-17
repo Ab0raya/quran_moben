@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Add this import for SystemChrome
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:quran_moben/app/views/home_view/home_view.dart';
 import 'app/controllers/quran_page_controller.dart';
@@ -7,13 +7,12 @@ import 'utils/colors.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-    ),
-  );
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
+    SystemUiOverlay.top,
+  ]);
+
+
+
 
   runApp(const QuranApp());
 }
